@@ -2,6 +2,11 @@ const path = require("path");
 const express = require("express");
 const userRoute = require("./routes/user");
 const mongoose=require("mongoose");
+const cookiePaser=require('cookie-parser');
+const { checkForAuthenticationCookie } = require("./middlewares/authentication");
+const Blogroute=require("./routes/Blog")
+
+const blog=require("./models/blog");
 
 const app = express();
 const PORT = 5000;
@@ -22,10 +27,23 @@ app.set("views", "./views");
 
 // Middleware to parse URL-encoded data (optional based on your use case)
 app.use(express.urlencoded({ extended: true }));
+app.use(cookiePaser());
+app.use(checkForAuthenticationCookie("token"));
+app.use(express.static(path.resolve("./public")));
+
 app.use("/user", userRoute);
+app.use("/blog", Blogroute);
+
 // Home route
-app.get("/", (req, res) => {
-    res.render("home"); // Assumes a 'home.ejs' exists in the /views directory
+app.get("/", async(req, res) => {
+
+    const allBlogs=await blog.find({});
+    res.render("home",
+        {
+            user:req.user,
+            blogs:allBlogs,
+        }
+    ); // Assumes a 'home.ejs' exists in the /views directory
 });
 
 
